@@ -60,13 +60,12 @@ sast-check:
     - gosec ./...
 
 docker-build:
-  image: docker:20.10.16
+  image: docker:20.10.16-dind
   stage: build_docker
   variables:
     # Instruct Testcontainers to use the daemon of DinD.
   services:
-    #    - docker:20.10.16-dind
-    - docker:dind
+    - docker:20.10.16-dind
   only:
     - main
   before_script:
