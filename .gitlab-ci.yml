@@ -63,7 +63,8 @@ docker-build:
   variables:
     # Instruct Testcontainers to use the daemon of DinD.
   services:
-    - docker:20.10.16-dind
+    #    - docker:20.10.16-dind
+    - docker:dind
   only:
     - main
   stage: build
