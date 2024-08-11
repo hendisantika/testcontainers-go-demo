@@ -60,6 +60,7 @@ sast-check:
     - gosec ./...
 
 build-app:
+  image: golang:1.22-alpine3.20
   stage: build
   script:
     #    - mkdir -p $OUTPUT_NAME
