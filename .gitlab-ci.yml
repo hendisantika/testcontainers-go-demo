@@ -18,6 +18,7 @@ variables:
 stages:
   - test
   - build
+  - build_docker
   - before_deployment
   - deployment
 
@@ -58,8 +59,21 @@ sast-check:
   script:
     - gosec ./...
 
+build-app:
+  stage: build
+  script:
+    #    - mkdir -p $OUTPUT_NAME
+    - mkdir -p testcontainer-go-demo
+    #    - go build -o $OUTPUT_NAME ./...
+    - go build -o testcontainer-go-demo  ./...
+  artifacts:
+    paths:
+      #      - $OUTPUT_NAME
+      - testcontainer-go-demo
+
 docker-build:
   image: docker:20.10.16
+  stage: build_docker
   variables:
     # Instruct Testcontainers to use the daemon of DinD.
   services:
@@ -67,12 +81,12 @@ docker-build:
     - docker:dind
   only:
     - main
-  stage: build
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
   script:
     - docker build -t registry.gitlab.com/hendisantika/testcontainers-go-demo:$CI_PIPELINE_IID .
     - docker push registry.gitlab.com/hendisantika/testcontainers-go-demo:$CI_PIPELINE_IID
+
 
 build:
   image: docker:20.10.16
