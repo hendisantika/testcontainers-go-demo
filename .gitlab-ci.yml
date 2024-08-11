@@ -59,19 +59,6 @@ sast-check:
   script:
     - gosec ./...
 
-build-app:
-  image: golang:1.22-alpine3.20
-  stage: build
-  script:
-    #    - mkdir -p $OUTPUT_NAME
-    - mkdir -p testcontainer-go-demo
-    #    - go build -o $OUTPUT_NAME ./...
-    - go build -o testcontainer-go-demo  ./...
-  artifacts:
-    paths:
-      #      - $OUTPUT_NAME
-      - testcontainer-go-demo
-
 docker-build:
   image: docker:20.10.16
   stage: build_docker
