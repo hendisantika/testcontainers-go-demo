@@ -1,12 +1,19 @@
 image: docker:latest
 
+default:
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - docker info
+
 services:
   - docker:dind
 
 variables:
   # Instruct Testcontainers to use the daemon of DinD.
-  #  DOCKER_HOST: "tcp://docker:2375"
-  DOCKER_HOST: "tcp://127.0.0.1:39751"
+  DOCKER_HOST: "tcp://docker:2375"
+  #  DOCKER_HOST: "tcp://127.0.0.1:39751"
   # Instruct Docker not to start over TLS.
   DOCKER_TLS_CERTDIR: ""
   # Improve performance with overlayfs.
