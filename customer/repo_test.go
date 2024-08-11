@@ -48,7 +48,7 @@ func TestCustomerRepository(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 
-	customer, err := customerRepo.GetCustomerByEmail(ctx, "henry@gmail.com")
+	customer, err := customerRepo.GetCustomerByEmail(ctx, "yuji@yopmail.com")
 	assert.NoError(t, err)
 	assert.NotNil(t, customer)
 	assert.Equal(t, "Itadori Yuji", customer.Name)
