@@ -62,8 +62,6 @@ docker-build:
   image: docker:20.10.16
   variables:
     # Instruct Testcontainers to use the daemon of DinD.
-    #  DOCKER_HOST: "tcp://docker:2375"
-    DOCKER_HOST: "tcp://127.0.0.1:39751"
   services:
     - docker:20.10.16-dind
   only:
