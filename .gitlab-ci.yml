@@ -44,6 +44,7 @@ unit-test:
   image: golang:1.22-alpine3.20
   stage: test
   script:
+    - curl -fsSL https://app.testcontainers.cloud/bash | bash
     - go test ./...
 
 sast-check:
