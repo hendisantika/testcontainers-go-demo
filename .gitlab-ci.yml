@@ -1,0 +1,95 @@
+image: docker:latest
+
+services:
+  - docker:dind
+
+variables:
+  # Instruct Testcontainers to use the daemon of DinD.
+  DOCKER_HOST: "tcp://docker:2375"
+  # Instruct Docker not to start over TLS.
+  DOCKER_TLS_CERTDIR: ""
+  # Improve performance with overlayfs.
+  DOCKER_DRIVER: overlay2
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+  GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
+
+# Stages definition
+stages:
+  - test
+  - build
+  - before_deployment
+  - deployment
+
+# Common settings for jobs
+.deploy_template:
+  image: ubuntu
+  only:
+    - tags
+    - /^v.*$/
+    - /^rc.*$/
+  stage: before_deployment
+  before_script:
+    - apt update && apt install openssh-client -y
+    - mkdir -p ~/.ssh/
+    - echo "$SSH_PRIVATE_KEY" >> ~/.ssh/id_rsa
+    - echo "$SSH_PUBLIC_KEY" >> ~/.ssh/id_rsa.pub
+    - ssh-keyscan -H $SERVER_HOST >> ~/.ssh/known_hosts
+    - VERSION=$(echo "$CI_COMMIT_REF_NAME" | sed 's/^v//')
+    - chmod 600 ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa.pub
+    - echo "$ENV_PRODUCTION" >> env-production
+
+# Jobs
+unit-test:
+  image: golang:1.22-alpine3.20
+  stage: test
+  script:
+    - go test ./...
+
+sast-check:
+  image: golang:1.22-alpine3.20
+  stage: test
+  before_script:
+    - go install github.com/securego/gosec/v2/cmd/gosec@latest
+  script:
+    - gosec ./...
+
+docker-build:
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  only:
+    - main
+  stage: build
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+  script:
+    - docker build -t registry.gitlab.com/hendisantika/go-simple-crud-postgres:$CI_PIPELINE_IID .
+    - docker push registry.gitlab.com/hendisantika/go-simple-crud-postgres:$CI_PIPELINE_IID
+
+build:
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  only:
+    - tags
+  stage: build
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+    - VERSION=$(echo "$CI_COMMIT_REF_NAME" | sed 's/^v//')
+  script:
+    - docker build -t $REPOSITORY_URL:$CI_PIPELINE_IID:$VERSION .
+    - docker push $REPOSITORY_URL:$CI_PIPELINE_IID:$VERSION
+
+update_docker_compose:
+  extends: .deploy_template
+  script:
+    - sed -i "s/^TAG=.*$/TAG=$VERSION/" env-production
+    - scp env-production $SERVER_USER@$SERVER_HOST:/$SERVER_USER/production/.env
+    - scp -r $CI_PROJECT_DIR/deployment/production/ $SERVER_USER@$SERVER_HOST:/$SERVER_USER/
+
+#deploy_api:
+#  extends: .deploy_template
+#  stage: deployment
+#  script:
+#    - ssh $SERVER_USER@$SERVER_HOST "cd production && docker compose up -d"
